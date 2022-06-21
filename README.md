@@ -17,4 +17,4 @@ triggered.
 
  
 # CREDITS
-[VALORANT-API-DOCS]([https://www.google.com](https://github.com/techchrism/valorant-api-docs/tree/trunk/docs))
+[VALORANT-API-DOCS](https://github.com/techchrism/valorant-api-docs/tree/trunk/docs)
