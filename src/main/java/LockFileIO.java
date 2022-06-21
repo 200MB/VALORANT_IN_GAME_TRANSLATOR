@@ -3,6 +3,7 @@ import java.io.*;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.util.Objects;
 import java.util.Scanner;
 
 public class LockFileIO { //name:pid:port:password:protocol
@@ -19,7 +20,7 @@ public class LockFileIO { //name:pid:port:password:protocol
         File file = getLockFileCopy();
         StringBuilder allInOne = new StringBuilder();
         try {
-            Scanner myReader = new Scanner(file);
+            Scanner myReader = new Scanner(Objects.requireNonNull(file));
             while (myReader.hasNextLine()) {
                 String data = myReader.nextLine();
                 allInOne.append(data);
