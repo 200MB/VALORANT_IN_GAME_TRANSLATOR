@@ -1,4 +1,4 @@
-# VALORANT_IN_GAME_TRANSLATOR
+# VALORANT IN GAME TRANSLATOR
 This is a valorant in game chat translator written in java.
 
 ever get tired of getting matched with people who dont speak your language? i know i do. so i decided to create a program that will autotranslate 
