@@ -15,4 +15,6 @@ step for me to ask valorant support.
 the good news is that i highly doubt this will be the case since this program doesn't access valorant in-game memory AT ALL meaning that anti-cheat will not get
 triggered.
 
-
+ 
+# CREDITS
+[VALORANT-API-DOCS]([https://www.google.com](https://github.com/techchrism/valorant-api-docs/tree/trunk/docs))
