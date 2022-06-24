@@ -26,20 +26,27 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class LocalApi {
     LockFileIO lockFileIO;
     CloseableHttpClient httpClient;
-
-    private static final String PARTY_CHAT_URL = "https://127.0.0.1:%s/chat/v6/conversations/ares-parties";
-    private static final String SPECIFIC_CHAT_URL = "https://127.0.0.1:%s/chat/v6/messages?cid=%s"; //needs cid
-    private static final String PRE_GAME_URL = "https://127.0.0.1:%s/chat/v6/conversations/ares-pregame";
-    private static final String IN_GAME_URL = "https://127.0.0.1:%s/chat/v6/conversations/ares-coregame";
-    private static final String SEND_URL = "https://127.0.0.1:%s/chat/v6/messages/";
-    private static final String SEND_WHISPER_URL = "https://127.0.0.1:%s/chat/v6/messages/";
-    private static final String GREEN_ANSI = "\\u001B[32m";
+    private static final String PARTY_CHAT_URL = "https://127.0.0.1:%s/chat/v6/conversations/ares-parties"; //port
+    private static final String SPECIFIC_CHAT_URL = "https://127.0.0.1:%s/chat/v6/messages?cid=%s"; //port,cid
+    private static final String PRE_GAME_URL = "https://127.0.0.1:%s/chat/v6/conversations/ares-pregame"; //port
+    private static final String IN_GAME_URL = "https://127.0.0.1:%s/chat/v6/conversations/ares-coregame"; //port
+    private static final String SEND_URL = "https://127.0.0.1:%s/chat/v6/messages/"; //port
+    private static final String SEND_WHISPER_URL = "https://127.0.0.1:%s/chat/v6/messages/"; //port
+    private static final String RSO_RNet_GetEntitlementsToken = "https://127.0.0.1:%s/entitlements/v1/token"; //port
+    private static final String RSO_RNet_GetUserInfoToken = "https://auth.riotgames.com/userinfo"; //port
+    private static final String SESSION_GET = "https://glz-%s-1.%s.a.pvp.net/session/v1/sessions/%s"; //region,region,puuid
+    private static final String REGION_GET = "https://127.0.0.1:%s/riotclient/region-locale"; //port
+    private static final String ANSI_YELLOW = "\u001B[33m";
     private static final String RESET_ANSI = "\u001B[0m";
     private final String encodeBytes;
+    private Integer index = 0;
+    private Integer size = 0;
 
     public LocalApi(LockFileIO lockFileIO) throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
         this.lockFileIO = lockFileIO;
@@ -79,6 +86,41 @@ public class LocalApi {
 
     }
 
+    public String getEntitlementsToken() {
+        return createGetRequest(RSO_RNet_GetEntitlementsToken);
+    }
+
+    public JSONObject getUserInfo() throws ParseException {
+        HttpGet request = new HttpGet(RSO_RNet_GetUserInfoToken);
+        JSONParser parser = new JSONParser();
+        String token = (String) ((JSONObject) parser.parse(getEntitlementsToken())).get("accessToken");
+        request.addHeader("Authorization", "Bearer %s".formatted(token));
+        return (JSONObject) parser.parse(getResponse(request));
+    }
+
+    public JSONObject getSession() throws ParseException {
+        HttpGet request = new HttpGet(SESSION_GET.formatted(getRegion(), getRegion(), getUserInfo().get("sub")));
+        JSONParser parser = new JSONParser();
+        String accessToken = (String) ((JSONObject) parser.parse(getEntitlementsToken())).get("accessToken");
+        String token = (String) ((JSONObject) parser.parse(getEntitlementsToken())).get("token");
+        request.addHeader("Authorization", "Bearer %s".formatted(accessToken));
+        request.addHeader("X-Riot-Entitlements-JWT", token);
+        return (JSONObject) parser.parse(getResponse(request));
+    }
+
+    public String getLoopState() throws ParseException {
+        return (String) getSession().get("loopState");
+    }
+
+    public String getRegion() throws ParseException {
+        JSONParser parser = new JSONParser();
+        String region = (String) ((JSONObject) parser.parse(createGetRequest(REGION_GET))).get("region");
+        if (region.substring(0, 2).equalsIgnoreCase("eu")) return "eu";
+        if (region.substring(0, 2).equalsIgnoreCase("na")) return "na";
+        return "undefined";
+    }
+
+
     private String createGetRequest(String URL) {
         HttpGet request = new HttpGet(URL.formatted(lockFileIO.getPort()));
         request.addHeader("Authorization", "Basic %s".formatted(encodeBytes));
@@ -110,16 +152,13 @@ public class LocalApi {
         try (CloseableHttpResponse response = httpClient.execute((HttpUriRequest) request)) {
 
             // Get HttpResponse Status
-            System.out.println(response.getStatusLine().toString());
 
             HttpEntity entity = response.getEntity();
             Header headers = entity.getContentType();
-            System.out.println(headers);
 
             // return it as a String
             String result = EntityUtils.toString(entity);
             jsonString.append(result);
-            System.out.println(result);
 
 
         } catch (IOException e) {
@@ -153,8 +192,53 @@ public class LocalApi {
         for (Object object : array) {
             texts.add((String) ((JSONObject) object).get("body"));
         }
-        System.out.println(GREEN_ANSI + "RETRIEVED CHAT" + RESET_ANSI);
+        System.out.println(ANSI_YELLOW + "RETRIEVED CHAT" + RESET_ANSI);
         return texts;
+    }
+
+    public ArrayList<String> determineRetrieval() throws ParseException {
+        switch (getLoopState()) {
+            case "MENUS":
+                return getChatHistory(getCid(getPartyChatInfo()));
+            default:
+                return null;
+        }
+    }
+
+    private boolean hasNewMessages(int size) {
+        return this.size != size;
+    }
+
+    private ArrayList<String> filterFromIndex(ArrayList<String> list, int index) {
+        ArrayList<String> arrayList = new ArrayList<>();
+        for (int i = index; i < list.size(); i++) {
+            arrayList.add(list.get(i));
+        }
+        this.size = list.size();
+        this.index = list.size();
+        System.out.println(arrayList);
+        return arrayList;
+    }
+
+    public void createListener() {
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                ArrayList<String> texts = new ArrayList<>();
+                try {
+                    texts = determineRetrieval();
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+                if (hasNewMessages(texts.size())) {
+                    texts = filterFromIndex(texts, index);
+                }
+
+                //translate if foreign
+                //send it back
+            }
+        }, 0, 2000);
     }
 
 }
