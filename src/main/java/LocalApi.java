@@ -24,6 +24,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Base64;
 
 public class LocalApi {
@@ -56,55 +57,56 @@ public class LocalApi {
                 sslsf).build();
     }
 
-    public void getPartyChatInfo() {
-        HttpGet request = new HttpGet(PARTY_CHAT_URL.formatted(lockFileIO.getPort()));
-        request.addHeader("Authorization", "Basic %s".formatted(encodeBytes));
-        getResponse(request);
+    public String getPartyChatInfo() {
+        return createGetRequest(PARTY_CHAT_URL);
 
     }
 
-    public void getSpecificChat(String cid) {
+    public String getSpecificChat(String cid) {
         HttpGet request = new HttpGet(SPECIFIC_CHAT_URL.formatted(lockFileIO.getPort(), cid));
         request.addHeader("Authorization", "Basic %s".formatted(encodeBytes));
-        getResponse(request);
+        return getResponse(request);
 
     }
 
-    public void getPreGameChat() {
-        HttpGet request = new HttpGet(PRE_GAME_URL.formatted(lockFileIO.getPort()));
+    public String getPreGameChat() {
+        return createGetRequest(PRE_GAME_URL);
+
+    }
+
+    public String getInGameChat() {
+        return createGetRequest(IN_GAME_URL);
+
+    }
+
+    private String createGetRequest(String URL) {
+        HttpGet request = new HttpGet(URL.formatted(lockFileIO.getPort()));
         request.addHeader("Authorization", "Basic %s".formatted(encodeBytes));
-        getResponse(request);
-
+        return getResponse(request);
     }
 
-    public void getInGameChat() {
-        HttpGet request = new HttpGet(IN_GAME_URL.formatted(lockFileIO.getPort()));
-        request.addHeader("Authorization", "Basic %s".formatted(encodeBytes));
-        getResponse(request);
-
-    }
-
-    public void sendChat(String cid, String message) throws UnsupportedEncodingException {
+    public String sendChat(String cid, String message) throws UnsupportedEncodingException {
         HttpPost request = new HttpPost(SEND_URL.formatted(lockFileIO.getPort()));
         request.addHeader("Authorization", "Basic %s".formatted(encodeBytes));
         request.addHeader("Content-Type", "application/json");
         StringEntity params = new StringEntity("{\"cid\":\"%s\",\"message\":\"%s\",\"type\":\"groupchat\"}".formatted(cid, message));
         request.setEntity(params);
-        getResponse(request);
+        return getResponse(request);
 
     }
 
-    public void sendWhisper(String cid, String message) throws UnsupportedEncodingException {
+    public String sendWhisper(String cid, String message) throws UnsupportedEncodingException {
         HttpPost request = new HttpPost(SEND_WHISPER_URL.formatted(lockFileIO.getPort()));
         request.addHeader("Authorization", "Basic %s".formatted(encodeBytes));
         request.addHeader("Content-Type", "application/json");
         StringEntity params = new StringEntity("{\"cid\":\"%s\",\"message\":\"%s\",\"type\":\"chat\"}".formatted(cid, message));
         request.setEntity(params);
-        getResponse(request);
+        return getResponse(request);
 
     }
 
-    private void getResponse(Object request) {
+    private String getResponse(Object request) {
+        StringBuilder jsonString = new StringBuilder();
         try (CloseableHttpResponse response = httpClient.execute((HttpUriRequest) request)) {
 
             // Get HttpResponse Status
@@ -116,11 +118,43 @@ public class LocalApi {
 
             // return it as a String
             String result = EntityUtils.toString(entity);
+            jsonString.append(result);
             System.out.println(result);
 
 
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return jsonString.toString();
     }
+
+    public JSONObject parseToJson(String getJson, String external) throws ParseException {
+        JSONParser parser = new JSONParser();
+        JSONObject object = (JSONObject) parser.parse(getJson);
+        object = (JSONObject) ((JSONArray) parser.parse(String.valueOf(object.get(external)))).get(0);
+        return object;
+    }
+
+    public JSONArray parseToJsonArray(String getJson, String external) throws ParseException {
+        JSONParser parser = new JSONParser();
+        JSONObject object = (JSONObject) parser.parse(getJson);
+
+        return ((JSONArray) parser.parse(String.valueOf(object.get(external))));
+    }
+
+
+    public String getCid(String json) throws ParseException {
+        return (String) parseToJson(json, "conversations").get("cid");
+    }
+
+    public ArrayList<String> getChatHistory(String cid) throws ParseException {
+        JSONArray array = parseToJsonArray(getSpecificChat(cid), "messages");
+        ArrayList<String> texts = new ArrayList<>();
+        for (Object object : array) {
+            texts.add((String) ((JSONObject) object).get("body"));
+        }
+        System.out.println(GREEN_ANSI + "RETRIEVED CHAT" + RESET_ANSI);
+        return texts;
+    }
+
 }
