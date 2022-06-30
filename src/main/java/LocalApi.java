@@ -245,7 +245,7 @@ public class LocalApi {
 
     }
 
-    public ArrayList<String> getCombinedTextsInGame() throws ParseException, UnsupportedEncodingException {
+    public ArrayList<String> getCombinedTextsInGame() throws ParseException {
         ArrayList<String> combined = new ArrayList<>();
         ArrayList<String> teamChat = getChatHistory(getInGameTeamChatCid());
         ArrayList<String> allChat = getChatHistory(getInGameAllChatCid());
@@ -258,9 +258,11 @@ public class LocalApi {
     public ArrayList<String> translateList(ArrayList<String> texts) throws ParseException {
         ArrayList<String> translatedTexts = new ArrayList<>();
         for (String text : texts) {
-            String translated = translate(text, translateTo);
+            String[] split = text.split(":");
+            String translated = translate(split[1], translateTo);
+            if (translated == null) continue;
             if (!translated.equalsIgnoreCase(text)) {
-                translatedTexts.add(translated);
+                translatedTexts.add(split[0] + ":" + translated);
             }
         }
         return translatedTexts;
@@ -271,7 +273,7 @@ public class LocalApi {
         return switch (getLoopState()) {
             case "MENUS" -> getChatHistory(getCid(getPartyChatInfo()));
             case "PREGAME" -> getChatHistory(getCid(getPreGameChat()));
-            case "INGAME" -> getChatHistory("fdcfdfc5-c397-528c-9635-5bdcb4ade6de@tr1.pvp.net");
+            case "INGAME" -> getCombinedTextsInGame();
             default -> null;
         };
     }
@@ -325,7 +327,7 @@ public class LocalApi {
             String userPuuid = (String) ((JSONObject) object).get("puuid");
             String localUserPuuid = (String) getUserInfo().get("sub");
 
-            String text = ((String) ((JSONObject) object).get("body"));
+            String text =(((JSONObject) object).get("game_name")) + ":" + (((JSONObject) object).get("body"));
             if (!userPuuid.equalsIgnoreCase(localUserPuuid) && excludeHost) {
                 texts.add(text);
             }
