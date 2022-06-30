@@ -1,15 +1,12 @@
 import org.json.simple.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
-
-import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Scanner;
 
 public class ExternalIO {
-    private JSONObject params = new JSONObject();
+    private final JSONObject params = new JSONObject();
 
     public ExternalIO() throws FileNotFoundException {
         File file = new File("src/main/resources/parameters.txt");

@@ -236,7 +236,7 @@ public class LocalApi {
     }
 
     public String getInGameTeamChatCid() throws ParseException {
-        return getInGameChatChannels().stream().filter(e -> e.contains("blue@ares")).findFirst().get();
+        return getInGameChatChannels().stream().filter(e -> e.contains("red@ares")).findFirst().orElse(String.valueOf(getInGameChatChannels().stream().filter(e -> e.contains("blue@ares")).findFirst()));
 
     }
 
@@ -261,7 +261,7 @@ public class LocalApi {
             String[] split = text.split(":");
             String translated = translate(split[1], translateTo);
             if (translated == null) continue;
-            if (!translated.equalsIgnoreCase(text)) {
+            if (!translated.equalsIgnoreCase(split[1])) {
                 translatedTexts.add(split[0] + ":" + translated);
             }
         }
