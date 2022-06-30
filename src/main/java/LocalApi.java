@@ -6,6 +6,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -16,18 +17,17 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 public class LocalApi {
     LockFileIO lockFileIO;
+    ExternalIO externalIO;
     CloseableHttpClient httpClient;
     private static final String PARTY_CHAT_URL = "https://127.0.0.1:%s/chat/v6/conversations/ares-parties"; //port
     private static final String SPECIFIC_CHAT_URL = "https://127.0.0.1:%s/chat/v6/messages?cid=%s"; //port,cid
@@ -44,11 +44,30 @@ public class LocalApi {
     private final String encodeBytes;
     private Integer index = 0;
     private Integer size = 0;
+    private String currentLoopState = "MENUS";
+    private boolean excludeHost; //init
+    private String translateTo; //init
+    private String nativeLanguage; //init
+    private final JSONObject userInfo;
+    private final String region;
+    private final JSONObject params;
 
-    public LocalApi(LockFileIO lockFileIO) throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
+    public LocalApi(LockFileIO lockFileIO) throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException, ParseException, FileNotFoundException {
         this.lockFileIO = lockFileIO;
+        this.externalIO = new ExternalIO();
         encodeBytes = Base64.getEncoder().encodeToString("riot:%s".formatted(lockFileIO.getPassword()).getBytes());
         setHttpClient();
+
+        //init
+        userInfo = getUserInfo();
+        region = getRegion();
+        params = externalIO.getParams();
+        excludeHost = Boolean.parseBoolean((String) params.get("excludeHost"));
+        translateTo = (String) params.get("translateTo");
+        nativeLanguage = (String) params.get("nativeLanguage");
+        System.out.println(excludeHost);
+        System.out.println(translateTo);
+        System.out.println(nativeLanguage);
     }
 
     private void setHttpClient() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
@@ -65,13 +84,18 @@ public class LocalApi {
 
     }
 
-    public String translate(String text) throws UnsupportedEncodingException, ParseException {
+    public String translate(String text, String to) throws ParseException {
         HttpPost request = new HttpPost("https://deep-translator-api.azurewebsites.net/google/");
         JSONParser parser = new JSONParser();
-        request.addHeader("Content-Type", "application/json");
         request.addHeader("accept", "application/json");
-        StringEntity params = new StringEntity("{\"source\":\"auto\",\"target\":\"en\",\"text\":\"%s\"}".formatted(text));
+        request.addHeader("Content-Type", "application/json");
+        JSONObject json = new JSONObject();
+        json.put("source", "auto");
+        json.put("target", to);
+        json.put("text", text);
+        StringEntity params = new StringEntity(json.toJSONString(), ContentType.APPLICATION_JSON);
         request.setEntity(params);
+        System.out.println(getResponse(request));
         return (String) ((JSONObject) parser.parse(getResponse(request))).get("translation");
     }
 
@@ -105,7 +129,7 @@ public class LocalApi {
     }
 
     public JSONObject getSession() throws ParseException {
-        HttpGet request = new HttpGet(SESSION_GET.formatted(getRegion(), getRegion(), getUserInfo().get("sub")));
+        HttpGet request = new HttpGet(SESSION_GET.formatted(region, region, userInfo.get("sub")));
         JSONParser parser = new JSONParser();
         String accessToken = (String) ((JSONObject) parser.parse(getEntitlementsToken())).get("accessToken");
         String token = (String) ((JSONObject) parser.parse(getEntitlementsToken())).get("token");
@@ -133,13 +157,13 @@ public class LocalApi {
         return getResponse(request);
     }
 
-    public String sendChat(String cid, String message) throws UnsupportedEncodingException {
+    public void sendChat(String cid, String message) throws UnsupportedEncodingException {
         HttpPost request = new HttpPost(SEND_URL.formatted(lockFileIO.getPort()));
         request.addHeader("Authorization", "Basic %s".formatted(encodeBytes));
         request.addHeader("Content-Type", "application/json");
         StringEntity params = new StringEntity("{\"cid\":\"%s\",\"message\":\"%s\",\"type\":\"groupchat\"}".formatted(cid, message));
         request.setEntity(params);
-        return getResponse(request);
+        getResponse(request);
 
     }
 
@@ -153,10 +177,11 @@ public class LocalApi {
 
     }
 
+
+    //checks before::
     public void sendTexts(ArrayList<String> texts) throws ParseException, UnsupportedEncodingException {
         for (String text : texts) {
-            String translatedText = translate(text);
-            sendChat(determineCid(), translatedText);
+            sendChat(determineCid(), text);
         }
     }
 
@@ -167,7 +192,6 @@ public class LocalApi {
             // Get HttpResponse Status
 
             HttpEntity entity = response.getEntity();
-            Header headers = entity.getContentType();
 
             // return it as a String
             String result = EntityUtils.toString(entity);
@@ -187,13 +211,6 @@ public class LocalApi {
         return object;
     }
 
-    public ArrayList<String> translateList(ArrayList<String> texts) throws UnsupportedEncodingException, ParseException {
-        ArrayList<String> translatedTexts = new ArrayList<>();
-        for (String text : texts) {
-            translatedTexts.add(translate(text));
-        }
-        return translatedTexts;
-    }
 
     public JSONArray parseToJsonArray(String getJson, String external) throws ParseException {
         JSONParser parser = new JSONParser();
@@ -207,73 +224,150 @@ public class LocalApi {
         return (String) parseToJson(json, "conversations").get("cid");
     }
 
-    public ArrayList<String> getChatHistory(String cid) throws ParseException {
-        JSONArray array = parseToJsonArray(getSpecificChat(cid), "messages");
-        ArrayList<String> texts = new ArrayList<>();
-        for (Object object : array) {
-            String userPuuid = (String) ((JSONObject) object).get("puuid");
-            String localUserPuuid = (String) getUserInfo().get("sub");
-            if (!userPuuid.equalsIgnoreCase(localUserPuuid)) {
-                texts.add((String) ((JSONObject) object).get("body"));
-            }
-        }
-        System.out.println(ANSI_YELLOW + "RETRIEVED CHAT" + RESET_ANSI);
-        return texts;
+    public ArrayList<String> getInGameChatChannels() throws ParseException {
+        JSONParser parser = new JSONParser();
+        JSONArray array = (JSONArray) ((JSONObject) parser.parse(getInGameChat())).get("conversations");
+        JSONObject object1 = (JSONObject) parser.parse(String.valueOf(array.get(0)));
+        JSONObject object2 = (JSONObject) parser.parse(String.valueOf(array.get(1)));
+        ArrayList<String> cids = new ArrayList<>();
+        cids.add((String) object2.get("cid"));
+        cids.add((String) object1.get("cid"));
+        return cids;
     }
 
-    public ArrayList<String> determineRetrieval() throws ParseException { //gets messages from the current player session
+    public String getInGameTeamChatCid() throws ParseException {
+        return getInGameChatChannels().stream().filter(e -> e.contains("blue@ares")).findFirst().get();
+
+    }
+
+    public String getInGameAllChatCid() throws ParseException {
+        return getInGameChatChannels().stream().filter(e -> e.contains("all@ares")).findFirst().get();
+
+    }
+
+    public ArrayList<String> getCombinedTextsInGame() throws ParseException, UnsupportedEncodingException {
+        ArrayList<String> combined = new ArrayList<>();
+        ArrayList<String> teamChat = getChatHistory(getInGameTeamChatCid());
+        ArrayList<String> allChat = getChatHistory(getInGameAllChatCid());
+        combined.addAll(teamChat);
+        combined.addAll(allChat);
+        return combined;
+    }
+
+    //checks before::
+    public ArrayList<String> translateList(ArrayList<String> texts) throws ParseException {
+        ArrayList<String> translatedTexts = new ArrayList<>();
+        for (String text : texts) {
+            String translated = translate(text, translateTo);
+            if (!translated.equalsIgnoreCase(text)) {
+                translatedTexts.add(translated);
+            }
+        }
+        return translatedTexts;
+    }
+
+    //gets messages from the current player session
+    public ArrayList<String> determineRetrieval() throws ParseException, UnsupportedEncodingException {
         return switch (getLoopState()) {
             case "MENUS" -> getChatHistory(getCid(getPartyChatInfo()));
             case "PREGAME" -> getChatHistory(getCid(getPreGameChat()));
-            case "INGAME" -> getChatHistory(getCid(getInGameChat()));
+            case "INGAME" -> getChatHistory("fdcfdfc5-c397-528c-9635-5bdcb4ade6de@tr1.pvp.net");
             default -> null;
         };
     }
+
 
     public String determineCid() throws ParseException {
         return switch (getLoopState()) {
             case "MENUS" -> getCid(getPartyChatInfo());
             case "PREGAME" -> getCid(getPreGameChat());
-            case "INGAME" -> getCid(getInGameChat());
+            case "INGAME" -> getInGameTeamChatCid();
             default -> null;
         };
     }
 
     private boolean hasNewMessages(int size) {
-        return this.size != size;
+        return this.size != size && size != 0;
     }
 
     //reads complete chat history from the current session and then continues where it was left off
     //updates both size and index.
-    private ArrayList<String> filterFromIndex(ArrayList<String> list, int index) {
+    private ArrayList<String> filterFromIndex(ArrayList<String> list, int index) throws ParseException {
         ArrayList<String> arrayList = new ArrayList<>();
         for (int i = index; i < list.size(); i++) {
             arrayList.add(list.get(i));
         }
         this.size = list.size();
         this.index = list.size();
-        return arrayList;
+        System.out.println("resuming from " + index);
+        System.out.println(arrayList);
+        return translateList(arrayList);
     }
 
+    public void updateLoopState() {
+        try {
+            if (!getLoopState().equalsIgnoreCase(currentLoopState)) {
+                System.out.println("DETECTED SESSION CHANGE WAITING FOR CHAT TO LOAD...");
+                Thread.sleep(5000); //waits for 3 seconds for chat to load. avoids possible nullpointer
+                size = 0;
+                index = 0;
+                currentLoopState = getLoopState();
+            }
+        } catch (ParseException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public ArrayList<String> getChatHistory(String cid) throws ParseException {
+        JSONArray array = parseToJsonArray(getSpecificChat(cid), "messages");
+        ArrayList<String> texts = new ArrayList<>();
+        for (Object object : array) {
+            String userPuuid = (String) ((JSONObject) object).get("puuid");
+            String localUserPuuid = (String) getUserInfo().get("sub");
+
+            String text = ((String) ((JSONObject) object).get("body"));
+            if (!userPuuid.equalsIgnoreCase(localUserPuuid) && excludeHost) {
+                texts.add(text);
+            }
+        }
+
+        System.out.println(ANSI_YELLOW + "_" + RESET_ANSI);
+        return texts;
+    }
+
+
+    //returns a chat history based on current session
+    public ArrayList<String> retrieveText() {
+        try {
+            return determineRetrieval(); //already translated
+        } catch (ParseException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public void onNewMessage(ArrayList<String> texts) throws UnsupportedEncodingException, ParseException {
+        if (hasNewMessages(texts.size())) {
+            texts = filterFromIndex(texts, index);
+            try {
+                sendTexts(texts);
+            } catch (ParseException | UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     public void createListener() {
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                ArrayList<String> texts = new ArrayList<>();
+                updateLoopState();
+                ArrayList<String> texts = retrieveText();
                 try {
-                    texts = determineRetrieval();
-                } catch (ParseException e) {
+                    onNewMessage(texts);
+                } catch (UnsupportedEncodingException | ParseException e) {
                     e.printStackTrace();
-                }
-                if (hasNewMessages(texts.size())) {
-                    texts = filterFromIndex(texts, index);
-                    try {
-                        sendTexts(texts);
-                    } catch (ParseException | UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
                 }
             }
         }, 0, 2000);
