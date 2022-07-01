@@ -1,4 +1,3 @@
-import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -23,7 +22,10 @@ import java.io.UnsupportedEncodingException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class LocalApi {
     LockFileIO lockFileIO;
@@ -45,9 +47,9 @@ public class LocalApi {
     private Integer index = 0;
     private Integer size = 0;
     private String currentLoopState = "MENUS";
-    private boolean excludeHost; //init
-    private String translateTo; //init
-    private String nativeLanguage; //init
+    private final boolean excludeHost; //init
+    private final String translateTo; //init
+    private final String nativeLanguage; //init
     private final JSONObject userInfo;
     private final String region;
     private final JSONObject params;
@@ -77,6 +79,7 @@ public class LocalApi {
                 builder.build());
         this.httpClient = HttpClients.custom().setSSLSocketFactory(
                 sslsf).build();
+
     }
 
     public String getPartyChatInfo() {
@@ -161,7 +164,7 @@ public class LocalApi {
         HttpPost request = new HttpPost(SEND_URL.formatted(lockFileIO.getPort()));
         request.addHeader("Authorization", "Basic %s".formatted(encodeBytes));
         request.addHeader("Content-Type", "application/json");
-        StringEntity params = new StringEntity("{\"cid\":\"%s\",\"message\":\"%s\",\"type\":\"groupchat\"}".formatted(cid, message));
+        StringEntity params = new StringEntity("{\"cid\":\"%s\",\"message\":\"%s\",\"type\":\"groupchat\"}".formatted(cid, message),ContentType.APPLICATION_JSON);
         request.setEntity(params);
         getResponse(request);
 
@@ -171,7 +174,7 @@ public class LocalApi {
         HttpPost request = new HttpPost(SEND_WHISPER_URL.formatted(lockFileIO.getPort()));
         request.addHeader("Authorization", "Basic %s".formatted(encodeBytes));
         request.addHeader("Content-Type", "application/json");
-        StringEntity params = new StringEntity("{\"cid\":\"%s\",\"message\":\"%s\",\"type\":\"chat\"}".formatted(cid, message));
+        StringEntity params = new StringEntity("{\"cid\":\"%s\",\"message\":\"%s\",\"type\":\"chat\"}".formatted(cid, message),ContentType.APPLICATION_JSON);
         request.setEntity(params);
         return getResponse(request);
 
@@ -236,8 +239,14 @@ public class LocalApi {
     }
 
     public String getInGameTeamChatCid() throws ParseException {
-        return getInGameChatChannels().stream().filter(e -> e.contains("red@ares")).findFirst().orElse(String.valueOf(getInGameChatChannels().stream().filter(e -> e.contains("blue@ares")).findFirst()));
-
+        return getInGameChatChannels().stream().filter(e -> e.contains("red@ares")).findFirst().orElseGet(()-> {
+            try {
+                return getInGameChatChannels().stream().filter(e->e.contains("blue@ares")).findFirst().get();
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            return null;
+        });
     }
 
     public String getInGameAllChatCid() throws ParseException {
@@ -267,7 +276,7 @@ public class LocalApi {
         }
         return translatedTexts;
     }
-
+    //fdcfdfc5-c397-528c-9635-5bdcb4ade6de@tr1.pvp.net
     //gets messages from the current player session
     public ArrayList<String> determineRetrieval() throws ParseException, UnsupportedEncodingException {
         return switch (getLoopState()) {
