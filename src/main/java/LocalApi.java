@@ -44,8 +44,12 @@ public class LocalApi {
     private static final String ANSI_YELLOW = "\u001B[33m";
     private static final String RESET_ANSI = "\u001B[0m";
     private final String encodeBytes;
-    private Integer index = 0;
-    private Integer size = 0;
+    private Integer baseIndex = 0;
+    private Integer teamIndex = 0;
+    private Integer allIndex = 0;
+    private Integer baseSize = 0;
+    private Integer teamSize = 0;
+    private Integer allSize = 0;
     private String currentLoopState = "MENUS";
     private final boolean excludeHost; //init
     private final String translateTo; //init
@@ -164,7 +168,7 @@ public class LocalApi {
         HttpPost request = new HttpPost(SEND_URL.formatted(lockFileIO.getPort()));
         request.addHeader("Authorization", "Basic %s".formatted(encodeBytes));
         request.addHeader("Content-Type", "application/json");
-        StringEntity params = new StringEntity("{\"cid\":\"%s\",\"message\":\"%s\",\"type\":\"groupchat\"}".formatted(cid, message),ContentType.APPLICATION_JSON);
+        StringEntity params = new StringEntity("{\"cid\":\"%s\",\"message\":\"%s\",\"type\":\"groupchat\"}".formatted(cid, message), ContentType.APPLICATION_JSON);
         request.setEntity(params);
         getResponse(request);
 
@@ -174,7 +178,7 @@ public class LocalApi {
         HttpPost request = new HttpPost(SEND_WHISPER_URL.formatted(lockFileIO.getPort()));
         request.addHeader("Authorization", "Basic %s".formatted(encodeBytes));
         request.addHeader("Content-Type", "application/json");
-        StringEntity params = new StringEntity("{\"cid\":\"%s\",\"message\":\"%s\",\"type\":\"chat\"}".formatted(cid, message),ContentType.APPLICATION_JSON);
+        StringEntity params = new StringEntity("{\"cid\":\"%s\",\"message\":\"%s\",\"type\":\"chat\"}".formatted(cid, message), ContentType.APPLICATION_JSON);
         request.setEntity(params);
         return getResponse(request);
 
@@ -240,9 +244,9 @@ public class LocalApi {
 
 
     public String getInGameTeamChatCid() throws ParseException {
-        return getInGameChatChannels().stream().filter(e -> e.contains("red@ares")).findFirst().orElseGet(()-> {
+        return getInGameChatChannels().stream().filter(e -> e.contains("red@ares")).findFirst().orElseGet(() -> {
             try {
-                return getInGameChatChannels().stream().filter(e->e.contains("blue@ares")).findFirst().get();
+                return getInGameChatChannels().stream().filter(e -> e.contains("blue@ares")).findFirst().get();
             } catch (ParseException e) {
                 e.printStackTrace();
             }
@@ -257,10 +261,10 @@ public class LocalApi {
 
     public ArrayList<String> getCombinedTextsInGame() throws ParseException {
         ArrayList<String> combined = new ArrayList<>();
-        ArrayList<String> teamChat = getChatHistory(getInGameTeamChatCid());
-        ArrayList<String> allChat = getChatHistory(getInGameAllChatCid());
-        combined.addAll(teamChat);
-        combined.addAll(allChat);
+        ArrayList<String> teamChat = getChatHistory(getInGameTeamChatCid(), State.TEAM);
+        ArrayList<String> allChat = getChatHistory(getInGameAllChatCid(), State.ALL);
+        if (teamChat != null) combined.addAll(teamChat);
+        if (allChat != null) combined.addAll(allChat);
         return combined;
     }
 
@@ -269,20 +273,31 @@ public class LocalApi {
         ArrayList<String> translatedTexts = new ArrayList<>();
         for (String text : texts) {
             String[] split = text.split(":");
+
+            if (split[1].contains("TR/send")) {
+                String[] slash = split[1].split("/");
+                split[1] = translate(slash[4], slash[3]);
+                translatedTexts.add(split[0] + ":" + split[1]);
+                continue;
+            }
+
             String translated = translate(split[1], translateTo);
+
             if (translated == null) continue;
+
             if (!translated.equalsIgnoreCase(split[1])) {
                 translatedTexts.add(split[0] + ":" + translated);
             }
         }
         return translatedTexts;
     }
+
     //fdcfdfc5-c397-528c-9635-5bdcb4ade6de@tr1.pvp.net
     //gets messages from the current player session
     public ArrayList<String> determineRetrieval() throws ParseException, UnsupportedEncodingException {
         return switch (getLoopState()) {
-            case "MENUS" -> getChatHistory(getCid(getPartyChatInfo()));
-            case "PREGAME" -> getChatHistory(getCid(getPreGameChat()));
+            case "MENUS" -> getChatHistory(getCid(getPartyChatInfo()), State.MENUS);
+            case "PREGAME" -> getChatHistory(getCid(getPreGameChat()), State.PREGAME);
             case "INGAME" -> getCombinedTextsInGame();
             default -> null;
         };
@@ -298,22 +313,21 @@ public class LocalApi {
         };
     }
 
-    private boolean hasNewMessages(int size) {
-        return this.size != size && size != 0;
-    }
-
-    //reads complete chat history from the current session and then continues where it was left off
-    //updates both size and index.
-    private ArrayList<String> filterFromIndex(ArrayList<String> list, int index) throws ParseException {
-        ArrayList<String> arrayList = new ArrayList<>();
-        for (int i = index; i < list.size(); i++) {
-            arrayList.add(list.get(i));
+    private boolean hasNewMessages(int size, State state) {
+        switch (state) {
+            case ALL -> {
+                return size != allSize;
+            }
+            case TEAM -> {
+                return size != teamSize;
+            }
+            case PREGAME, MENUS -> {
+                return size != baseSize;
+            }
+            default -> {
+                return false;
+            }
         }
-        this.size = list.size();
-        this.index = list.size();
-        System.out.println("resuming from " + index);
-        System.out.println(arrayList);
-        return translateList(arrayList);
     }
 
     public void updateLoopState() {
@@ -321,8 +335,8 @@ public class LocalApi {
             if (!getLoopState().equalsIgnoreCase(currentLoopState)) {
                 System.out.println("DETECTED SESSION CHANGE WAITING FOR CHAT TO LOAD...");
                 Thread.sleep(5000); //waits for 5 seconds for chat to load. avoids possible nullpointer
-                size = 0;
-                index = 0;
+                baseSize = 0;
+                baseIndex = 0;
                 currentLoopState = getLoopState();
             }
         } catch (ParseException | InterruptedException e) {
@@ -330,19 +344,63 @@ public class LocalApi {
         }
     }
 
-    public ArrayList<String> getChatHistory(String cid) throws ParseException {
+    private void updateIndexAndSize(State state, int size) {
+        switch (state) {
+            case ALL -> {
+                allIndex = size;
+                allSize = size;
+            }
+            case TEAM -> {
+                teamIndex = size;
+                teamSize = size;
+            }
+            case PREGAME, MENUS -> {
+                baseIndex = size;
+                baseSize = size;
+            }
+        }
+    }
+
+    private void setBaseIndex(State state) {
+        switch (state) {
+            case ALL -> {
+                baseIndex = allIndex;
+                baseSize = allSize;
+            }
+            case TEAM -> {
+                baseIndex = teamIndex;
+                baseSize = teamSize;
+            }
+
+        }
+    }
+
+    public ArrayList<String> getChatHistory(String cid, State state) throws ParseException {
         JSONArray array = parseToJsonArray(getSpecificChat(cid), "messages");
+        if (!hasNewMessages(array.size(), state)) {
+            return null;
+        }
+        setBaseIndex(state);
         ArrayList<String> texts = new ArrayList<>();
-        for (Object object : array) {
+        for (int i = baseIndex; i < array.size(); i++) {
+            Object object = array.get(i);
             String userPuuid = (String) ((JSONObject) object).get("puuid");
             String localUserPuuid = (String) getUserInfo().get("sub");
 
-            String text =(((JSONObject) object).get("game_name")) + ":" + (((JSONObject) object).get("body"));
-            if (!userPuuid.equalsIgnoreCase(localUserPuuid) && excludeHost) {
+            String text = (((JSONObject) object).get("game_name")) + ":" + (((JSONObject) object).get("body"));
+
+            if (userPuuid.equalsIgnoreCase(localUserPuuid) && text.split(":")[1].contains("TR/send") && !excludeHost) {
+                texts.add(text);
+                continue;
+            }
+            if (!userPuuid.equalsIgnoreCase(localUserPuuid) && !text.split(":")[1].contains("TR/send")) {
                 texts.add(text);
             }
+
         }
 
+        updateIndexAndSize(state, array.size());
+        System.out.println(texts);
         System.out.println(ANSI_YELLOW + "_" + RESET_ANSI);
         return texts;
     }
@@ -359,13 +417,14 @@ public class LocalApi {
     }
 
     public void onNewMessage(ArrayList<String> texts) throws UnsupportedEncodingException, ParseException {
-        if (hasNewMessages(texts.size())) {
-            texts = filterFromIndex(texts, index);
-            try {
-                sendTexts(texts);
-            } catch (ParseException | UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
+        if (texts == null || texts.size() == 0) {
+            return;
+        }
+        texts = translateList(texts);
+        try {
+            sendTexts(texts);
+        } catch (ParseException | UnsupportedEncodingException e) {
+            e.printStackTrace();
         }
     }
 
