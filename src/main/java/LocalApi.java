@@ -238,6 +238,7 @@ public class LocalApi {
         return cids;
     }
 
+
     public String getInGameTeamChatCid() throws ParseException {
         return getInGameChatChannels().stream().filter(e -> e.contains("red@ares")).findFirst().orElseGet(()-> {
             try {
@@ -319,7 +320,7 @@ public class LocalApi {
         try {
             if (!getLoopState().equalsIgnoreCase(currentLoopState)) {
                 System.out.println("DETECTED SESSION CHANGE WAITING FOR CHAT TO LOAD...");
-                Thread.sleep(5000); //waits for 3 seconds for chat to load. avoids possible nullpointer
+                Thread.sleep(5000); //waits for 5 seconds for chat to load. avoids possible nullpointer
                 size = 0;
                 index = 0;
                 currentLoopState = getLoopState();
