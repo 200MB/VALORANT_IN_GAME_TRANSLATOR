@@ -1,21 +1,64 @@
 # VALORANT IN GAME TRANSLATOR
 This is a valorant in game chat translator written in java.
 
-ever get tired of getting matched with people who dont speak your language? i know i do. so i decided to create a program that will autotranslate 
-whatever they type in chat and send a translated version right back to me.
+# HOW TO USE
+(not fully implemented)
+before downloading and running the program you have to fill up the parameters that it comes with.
+this will be a txt file named parameters.txt
+EVERY SINGLE PARAMETER MUST BE FILLED.
 
-my goal is to make this as easy and user friendly as possible. all you have to do is open valorant first and then open the translator thats it.
-everything else is automated. (well you will have to input your preffered language for program to translate into)
+# PARAMETERS EXPLAINED
+
+## 1.excludeHost
+
+set this to True (excludeHost:true) if you do not want your messages processed and sent back.
+
+set this to False (excludeHost:false) if you want your messages processed translated and sent back to team/all chat.
+
+this process is not automatic and requires a specific command. you have to type TR/send/{team/all}/{language}/{text you want to send}
+
+EXAMPLE: TR/send/team/german/hello 
+this will translate hello to german and send it in team chat
+
+EXAMPLE: TR/send/all/french/hello 
+this will translate hello to french and send it in all chat
+
+NOTE:these commands are only for the host. other team members will not be able to use this command.
+
+## 2.translateTo
+
+what language you want foreign texts to be translated to.
+
+EXAMPLE: translateTo:english
+
+this will translate every NON native language to english and send it back to team chat.
+
+## 3.nativeLanguage
+
+your native language. obviously you don't want your own language to be translated duh.
+
+EXAMPLE: nativeLanguage:english
+
+this will ensure that if the text is english it will not be processed.
+
+## 4.lockFileUrl
+
+Path to lockFile. this is a temporary file that valorant creates when its launched. it contains all the necessary information needed to 
+access chats and send texts.
+
+LOCATION: "C:\Users\{user}\AppData\Local\Riot Games\Riot Client\Config\lockfile.file" this path is generified.
+it is located in LocalAppData->riotClient->Config folder
+
+do not worry this program does not save any chat logs nor send them anywhere because i value privacy and plus if valorant finds out that it does anything fishy
+they'll yeet this program into void. it is open source so if you still have doubts you can just check the code.
+
+------------------------------------------------------------------
+
+thats pretty much it. make sure to open valorant first and THEN the translator. 
+
+happy rank up :)
 
 
-DISCLAIMER: this project is still in early development and i have yet to contact riot games about this project to see if they'll allow such thing.
-program still needs optimizations and even after it finally gets finished please wait for my confirmation because it might be bannable it is a neccessary
-step for me to ask valorant support. 
-
-the good news is that i highly doubt this will be the case since this program doesn't access valorant in-game memory AT ALL meaning that anti-cheat will not get
-triggered.
-
- 
 # CREDITS
 [VALORANT-API-DOCS](https://github.com/techchrism/valorant-api-docs/tree/trunk/docs)
 [TRANSLATION-API](https://github.com/nidhaloff/deep-translator)
