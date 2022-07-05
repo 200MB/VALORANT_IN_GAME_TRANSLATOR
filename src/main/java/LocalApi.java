@@ -84,6 +84,7 @@ public class LocalApi {
         this.httpClient = HttpClients.custom().setSSLSocketFactory(
                 sslsf).build();
 
+
     }
 
     public String getPartyChatInfo() {
@@ -164,7 +165,7 @@ public class LocalApi {
         return getResponse(request);
     }
 
-    public void sendChat(String cid, String message) throws UnsupportedEncodingException {
+    public void sendChat(String cid, String message) {
         HttpPost request = new HttpPost(SEND_URL.formatted(lockFileIO.getPort()));
         request.addHeader("Authorization", "Basic %s".formatted(encodeBytes));
         request.addHeader("Content-Type", "application/json");
@@ -334,9 +335,8 @@ public class LocalApi {
         try {
             if (!getLoopState().equalsIgnoreCase(currentLoopState)) {
                 System.out.println("DETECTED SESSION CHANGE WAITING FOR CHAT TO LOAD...");
+                resetCounter();
                 Thread.sleep(5000); //waits for 5 seconds for chat to load. avoids possible nullpointer
-                baseSize = 0;
-                baseIndex = 0;
                 currentLoopState = getLoopState();
             }
         } catch (ParseException | InterruptedException e) {
@@ -373,6 +373,15 @@ public class LocalApi {
             }
 
         }
+    }
+
+    public void resetCounter() {
+        teamIndex = 0;
+        teamSize = 0;
+        allIndex = 0;
+        allSize = 0;
+        baseSize = 0;
+        baseIndex = 0;
     }
 
     public ArrayList<String> getChatHistory(String cid, State state) throws ParseException {
