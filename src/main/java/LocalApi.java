@@ -50,6 +50,8 @@ public class LocalApi {
     private Integer baseSize = 0;
     private Integer teamSize = 0;
     private Integer allSize = 0;
+    private Integer menuIndex = 0;
+    private Integer menuSize = 0;
     private String currentLoopState = "MENUS";
     private final boolean excludeHost; //init
     private final String translateTo; //init
@@ -243,7 +245,8 @@ public class LocalApi {
         return cids;
     }
 
-
+    //returns red@ares if team is on attacker side and blue@ares if team is defending
+    //this is final meaning that once team changes sides channel string doesnt change
     public String getInGameTeamChatCid() throws ParseException {
         return getInGameChatChannels().stream().filter(e -> e.contains("red@ares")).findFirst().orElseGet(() -> {
             try {
@@ -269,16 +272,22 @@ public class LocalApi {
         return combined;
     }
 
+
     //checks before::
     public ArrayList<String> translateList(ArrayList<String> texts) throws ParseException {
         ArrayList<String> translatedTexts = new ArrayList<>();
         for (String text : texts) {
             String[] split = text.split(":");
 
+            //example: TR/send/team/turkish/hello
             if (split[1].contains("TR/send")) {
                 String[] slash = split[1].split("/");
                 split[1] = translate(slash[4], slash[3]);
-                translatedTexts.add(split[0] + ":" + split[1]);
+                if (slash[2].equalsIgnoreCase("all")) {
+                    sendChat(getInGameAllChatCid(), split[1]);
+                    continue;
+                }
+                sendChat(determineCid(), split[1]);
                 continue;
             }
 
@@ -322,7 +331,10 @@ public class LocalApi {
             case TEAM -> {
                 return size != teamSize;
             }
-            case PREGAME, MENUS -> {
+            case MENUS -> {
+                return size != menuSize;
+            }
+            case PREGAME -> {
                 return size != baseSize;
             }
             default -> {
@@ -354,7 +366,11 @@ public class LocalApi {
                 teamIndex = size;
                 teamSize = size;
             }
-            case PREGAME, MENUS -> {
+            case MENUS -> {
+                menuSize = size;
+                menuIndex = size;
+            }
+            case PREGAME -> {
                 baseIndex = size;
                 baseSize = size;
             }
@@ -371,7 +387,14 @@ public class LocalApi {
                 baseIndex = teamIndex;
                 baseSize = teamSize;
             }
-
+            case MENUS -> {
+                baseIndex = menuIndex;
+                baseSize = menuSize;
+            }
+            case PREGAME -> {
+                baseIndex = 0;
+                baseSize = 0;
+            }
         }
     }
 
@@ -397,7 +420,6 @@ public class LocalApi {
             String localUserPuuid = (String) getUserInfo().get("sub");
 
             String text = (((JSONObject) object).get("game_name")) + ":" + (((JSONObject) object).get("body"));
-
             if (userPuuid.equalsIgnoreCase(localUserPuuid) && text.split(":")[1].contains("TR/send") && !excludeHost) {
                 texts.add(text);
                 continue;

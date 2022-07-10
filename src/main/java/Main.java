@@ -13,8 +13,6 @@ public class Main {
         LockFileIO lockFileIO = new LockFileIO((String) externalIO.getParams().get("lockFileUrl"));
         LocalApi api = new LocalApi(lockFileIO);
         api.createListener();
-
-
     }
 
 }

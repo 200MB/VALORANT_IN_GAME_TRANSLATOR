@@ -1,8 +1,10 @@
 
 import java.io.*;
+import java.net.URISyntaxException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Scanner;
@@ -14,6 +16,19 @@ public class LockFileIO { //name:pid:port:password:protocol
     private final String password;
     private final String protocol;
     private final String lockFileUrl;
+
+    private File getFileFromDirectory() {
+        CodeSource codeSource = Main.class.getProtectionDomain().getCodeSource();
+        File jarFile = null;
+        try {
+            jarFile = new File(codeSource.getLocation().toURI().getPath());
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+        String jarDir = jarFile.getParentFile().getPath();
+        File file = new File(jarDir + "\\lockfilecopy");
+        return file;
+    }
 
     //find a lockfile for every user
     public LockFileIO(String lockFileUrl) throws IOException {
@@ -41,7 +56,7 @@ public class LockFileIO { //name:pid:port:password:protocol
     }
 
     private File getLockFileCopy() throws IOException {
-        File dest = new File("src/main/resources/lockfilecopy"); //generified
+        File dest = getFileFromDirectory();
         try {
             File copied = new File(lockFileUrl);
             Files.copy(copied.toPath(), dest.toPath());
