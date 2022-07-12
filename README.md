@@ -46,7 +46,7 @@ this will ensure that if the text is english it will not be processed.
 Path to lockFile. this is a temporary file that valorant creates when its launched. it contains all the necessary information needed to 
 access chats and send texts.
 
-LOCATION: "C:\Users\{user}\AppData\Local\Riot Games\Riot Client\Config\lockfile.file" this path is generified.
+LOCATION: "C:\Users\user\AppData\Local\Riot Games\Riot Client\Config\lockfile" this path is generified.
 it is located in LocalAppData->riotClient->Config folder
 
 do not worry this program does not save any chat logs nor send them anywhere because i value privacy and plus if valorant finds out that it does anything fishy
