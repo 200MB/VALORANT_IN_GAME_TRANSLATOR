@@ -2,7 +2,6 @@
 This is a valorant in game chat translator written in java.
 
 # HOW TO USE
-(not fully implemented)
 before downloading and running the program you have to fill up the parameters that it comes with.
 this will be a txt file named parameters.txt
 EVERY SINGLE PARAMETER MUST BE FILLED.
