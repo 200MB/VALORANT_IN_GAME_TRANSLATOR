@@ -274,8 +274,8 @@ public class LocalApi {
 
 
     //checks before::
-    public ArrayList<String> translateList(ArrayList<String> texts) throws ParseException {
-        ArrayList<String> translatedTexts = new ArrayList<>();
+    public void translateListAndSend(ArrayList<String> texts) throws ParseException {
+        String cid = determineCid();
         for (String text : texts) {
             String[] split = text.split(":");
 
@@ -287,7 +287,7 @@ public class LocalApi {
                     sendChat(getInGameAllChatCid(), split[1]);
                     continue;
                 }
-                sendChat(determineCid(), split[1]);
+                sendChat(cid, split[1]);
                 continue;
             }
 
@@ -295,11 +295,10 @@ public class LocalApi {
 
             if (translated == null) continue;
 
-            if (!translated.equalsIgnoreCase(split[1])) {
-                translatedTexts.add(split[0] + ":" + translated);
+            if (!split[1].equalsIgnoreCase(translated)) {
+                sendChat(cid, split[0] + ":" + translated);
             }
         }
-        return translatedTexts;
     }
 
     //fdcfdfc5-c397-528c-9635-5bdcb4ade6de@tr1.pvp.net
@@ -451,12 +450,7 @@ public class LocalApi {
         if (texts == null || texts.size() == 0) {
             return;
         }
-        texts = translateList(texts);
-        try {
-            sendTexts(texts);
-        } catch (ParseException | UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
+        translateListAndSend(texts);
     }
 
     public void createListener() {

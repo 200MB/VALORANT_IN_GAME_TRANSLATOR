@@ -32,7 +32,7 @@ public class LockFileIO { //name:pid:port:password:protocol
 
     //find a lockfile for every user
     public LockFileIO(String lockFileUrl) throws IOException {
-        this.lockFileUrl = lockFileUrl;
+        this.lockFileUrl = lockFileUrl.replaceAll("\\\\","/");
         File file = getLockFileCopy();
         StringBuilder allInOne = new StringBuilder();
         try {
