@@ -52,6 +52,8 @@ public class LocalApi {
     private Integer allSize = 0;
     private Integer menuIndex = 0;
     private Integer menuSize = 0;
+    private Integer preGameIndex = 0;
+    private Integer preGameSize = 0;
     private String currentLoopState = "MENUS";
     private final boolean excludeHost; //init
     private final String translateTo; //init
@@ -105,8 +107,9 @@ public class LocalApi {
         json.put("text", text);
         StringEntity params = new StringEntity(json.toJSONString(), ContentType.APPLICATION_JSON);
         request.setEntity(params);
-        System.out.println(getResponse(request));
-        return (String) ((JSONObject) parser.parse(getResponse(request))).get("translation");
+        String response = getResponse(request);
+        System.out.println(response);
+        return (String) ((JSONObject) parser.parse(response)).get("translation");
     }
 
     public String getSpecificChat(String cid) {
@@ -185,14 +188,6 @@ public class LocalApi {
         request.setEntity(params);
         return getResponse(request);
 
-    }
-
-
-    //checks before::
-    public void sendTexts(ArrayList<String> texts) throws ParseException, UnsupportedEncodingException {
-        for (String text : texts) {
-            sendChat(determineCid(), text);
-        }
     }
 
     private String getResponse(Object request) {
@@ -337,7 +332,7 @@ public class LocalApi {
                 return size != baseSize;
             }
             default -> {
-                return false;
+                return true;
             }
         }
     }
@@ -370,8 +365,8 @@ public class LocalApi {
                 menuIndex = size;
             }
             case PREGAME -> {
-                baseIndex = size;
-                baseSize = size;
+                preGameIndex = size;
+                preGameSize = size;
             }
         }
     }
@@ -391,8 +386,8 @@ public class LocalApi {
                 baseSize = menuSize;
             }
             case PREGAME -> {
-                baseIndex = 0;
-                baseSize = 0;
+                baseIndex = preGameIndex;
+                baseSize = preGameSize;
             }
         }
     }
@@ -402,6 +397,8 @@ public class LocalApi {
         teamSize = 0;
         allIndex = 0;
         allSize = 0;
+        preGameIndex = 0;
+        preGameSize = 0;
         baseSize = 0;
         baseIndex = 0;
     }

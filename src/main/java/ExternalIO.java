@@ -10,17 +10,17 @@ import java.util.Scanner;
 public class ExternalIO {
     private final JSONObject params = new JSONObject();
 
-    private File getFileFromDirectory(){
-            CodeSource codeSource = Main.class.getProtectionDomain().getCodeSource();
-            File jarFile = null;
-            try {
-                jarFile = new File(codeSource.getLocation().toURI().getPath());
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
-            }
-            String jarDir = jarFile.getParentFile().getPath();
-            File file = new File(jarDir + "\\parameters.txt");
-            return file;
+    private File getFileFromDirectory() {
+        CodeSource codeSource = Main.class.getProtectionDomain().getCodeSource();
+        File jarFile = null;
+        try {
+            jarFile = new File(codeSource.getLocation().toURI().getPath());
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+        String jarDir = jarFile.getParentFile().getPath();
+        File file = new File(jarDir + "\\parameters.txt");
+        return file;
     }
 
     public ExternalIO() throws FileNotFoundException {
@@ -36,6 +36,8 @@ public class ExternalIO {
         }
         myReader.close();
     }
+
+
 
     public JSONObject getParams() {
         return params;

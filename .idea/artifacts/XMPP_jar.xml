@@ -12,6 +12,9 @@
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/commons-codec/commons-codec/1.11/commons-codec-1.11.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/commons-logging/commons-logging/1.2/commons-logging-1.2.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/googlecode/json-simple/json-simple/1.1.1/json-simple-1.1.1.jar" path-in-jar="/" />
+      <element id="library" level="project" name="Maven: com.github.Twinkle942910:CheckMateFilter:v1.0" />
+      <element id="library" level="project" name="Maven: org.slf4j:slf4j-log4j12:1.7.25" />
+      <element id="library" level="project" name="Maven: org.slf4j:slf4j-api:1.7.25" />
     </root>
   </artifact>
 </component>
