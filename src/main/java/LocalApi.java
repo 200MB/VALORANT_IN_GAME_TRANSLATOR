@@ -285,7 +285,7 @@ public class LocalApi {
 
             boolean containsProfanity = containsBadWords(split[1]);
 
-            if (containsProfanity){
+            if (containsProfanity) {
                 System.out.println("DETECTED A BAD WORD, SKIPPING");
                 continue;
             }
@@ -302,11 +302,10 @@ public class LocalApi {
         }
     }
 
-    //fdcfdfc5-c397-528c-9635-5bdcb4ade6de@tr1.pvp.net
     //gets messages from the current player session
     public ArrayList<String> determineRetrieval() throws ParseException, UnsupportedEncodingException {
         return switch (getLoopState()) {
-            case "MENUS" -> getChatHistory("fdcfdfc5-c397-528c-9635-5bdcb4ade6de@tr1.pvp.net", State.MENUS);
+            case "MENUS" -> getChatHistory(getCid(getPartyChatInfo()), State.MENUS);
             case "PREGAME" -> getChatHistory(getCid(getPreGameChat()), State.PREGAME);
             case "INGAME" -> getCombinedTextsInGame();
             default -> null;
