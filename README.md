@@ -2,7 +2,6 @@
 This is a valorant in game chat translator written in java.
 
 # HOW TO USE
-(not fully implemented)
 before downloading and running the program you have to fill up the parameters that it comes with.
 this will be a txt file named parameters.txt
 EVERY SINGLE PARAMETER MUST BE FILLED.
@@ -62,3 +61,4 @@ happy rank up :)
 # CREDITS
 [VALORANT-API-DOCS](https://github.com/techchrism/valorant-api-docs/tree/trunk/docs)
 [TRANSLATION-API](https://github.com/nidhaloff/deep-translator)
+[PROFANITY-FILTER](https://github.com/Twinkle942910/CheckMateFilter/tree/v1.0)
