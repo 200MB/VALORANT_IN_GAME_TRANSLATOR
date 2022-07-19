@@ -27,6 +27,8 @@ NOTE:these commands are only for the host. other team members will not be able t
 
 ## 2.translateTo
 
+ALL PROFANITY WORDS ARE FILTERED.
+
 what language you want foreign texts to be translated to.
 
 EXAMPLE: translateTo:english
@@ -62,3 +64,4 @@ happy rank up :)
 # CREDITS
 [VALORANT-API-DOCS](https://github.com/techchrism/valorant-api-docs/tree/trunk/docs)
 [TRANSLATION-API](https://github.com/nidhaloff/deep-translator)
+[PROFANITY-FILTER](https://github.com/Twinkle942910/CheckMateFilter/tree/v1.0)
