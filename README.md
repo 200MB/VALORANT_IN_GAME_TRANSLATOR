@@ -51,21 +51,6 @@ it is located in LocalAppData->riotClient->Config folder
 do not worry this program does not save any chat logs nor send them anywhere because i value privacy and plus if valorant finds out that it does anything fishy
 they'll yeet this program into void. it is open source so if you still have doubts you can just check the code.
 
-
-## PROFANITY FILTER
-
-There is a profanity filter but it only works for:
-ENGLISH
-SPANISH
-GERMAN
-FRENCH
-RUSSIAN
-UKRANIAN
-POLISH
-
-IF you are translating foreign languages to these listed ones there is a high chance the program will detect profanity and filter it.
-IF not the beware because the program will translate the whole thing and include the profanity words as well so you might get reported for that.
-
 ------------------------------------------------------------------
 
 thats pretty much it. make sure to open valorant first and THEN the translator. 
