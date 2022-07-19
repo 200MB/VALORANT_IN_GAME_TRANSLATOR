@@ -2,7 +2,6 @@
 This is a valorant in game chat translator written in java.
 
 # HOW TO USE
-(not fully implemented)
 before downloading and running the program you have to fill up the parameters that it comes with.
 this will be a txt file named parameters.txt
 EVERY SINGLE PARAMETER MUST BE FILLED.
@@ -26,8 +25,6 @@ this will translate hello to french and send it in all chat
 NOTE:these commands are only for the host. other team members will not be able to use this command.
 
 ## 2.translateTo
-
-ALL PROFANITY WORDS ARE FILTERED.
 
 what language you want foreign texts to be translated to.
 
@@ -53,6 +50,21 @@ it is located in LocalAppData->riotClient->Config folder
 
 do not worry this program does not save any chat logs nor send them anywhere because i value privacy and plus if valorant finds out that it does anything fishy
 they'll yeet this program into void. it is open source so if you still have doubts you can just check the code.
+
+
+## PROFANITY FILTER
+
+There is a profanity filter but it only works for:
+ENGLISH
+SPANISH
+GERMAN
+FRENCH
+RUSSIAN
+UKRANIAN
+POLISH
+
+IF you are translating foreign languages to these listed ones there is a high chance the program will detect profanity and filter it.
+IF not the beware because the program will translate the whole thing and include the profanity words as well so you might get reported for that.
 
 ------------------------------------------------------------------
 
