@@ -6,6 +6,7 @@ before downloading and running the program you have to fill up the parameters th
 this will be a txt file named parameters.txt
 EVERY SINGLE PARAMETER MUST BE FILLED.
 
+
 # PARAMETERS EXPLAINED
 
 ## 1.excludeHost
@@ -51,9 +52,20 @@ it is located in LocalAppData->riotClient->Config folder
 do not worry this program does not save any chat logs nor send them anywhere because i value privacy and plus if valorant finds out that it does anything fishy
 they'll yeet this program into void. it is open source so if you still have doubts you can just check the code.
 
+
+
+## dealing with profanities
+
+it is no news that people can be toxic sometimes. so i added a txt file called badWords.txt
+you can put anything you want in there and if program detects that word in the message it'll completely ignore it.
+
+now testing and debugging is god awful since i don't have a second computer and rely on random teammates to send messages so i can see the work in process.
+
+there COULD be some exceptions where program slips some words by. what you can do is turn on language filter in valorant settings.
+this will ensure that even if it slips by, program will send translated sentence with already filtered text.
 ------------------------------------------------------------------
 
-thats pretty much it. make sure to open valorant first and THEN the translator. 
+thats pretty much it.
 
 happy rank up :)
 
