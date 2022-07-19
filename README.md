@@ -33,15 +33,7 @@ EXAMPLE: translateTo:english
 
 this will translate every NON native language to english and send it back to team chat.
 
-## 3.nativeLanguage
-
-your native language. obviously you don't want your own language to be translated duh.
-
-EXAMPLE: nativeLanguage:english
-
-this will ensure that if the text is english it will not be processed.
-
-## 4.lockFileUrl
+## 3.lockFileUrl
 
 Path to lockFile. this is a temporary file that valorant creates when its launched. it contains all the necessary information needed to 
 access chats and send texts.
