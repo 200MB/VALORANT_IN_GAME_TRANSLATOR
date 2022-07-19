@@ -7,6 +7,7 @@ import java.security.NoSuchAlgorithmException;
 
 
 public class Main {
+
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, ParseException {
         ExternalIO externalIO = new ExternalIO();
         LockFileIO lockFileIO = new LockFileIO((String) externalIO.getParams().get("lockFileUrl"));

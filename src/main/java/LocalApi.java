@@ -22,10 +22,9 @@ import java.io.UnsupportedEncodingException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class LocalApi {
     LockFileIO lockFileIO;
@@ -57,10 +56,10 @@ public class LocalApi {
     private String currentLoopState = "MENUS";
     private final boolean excludeHost; //init
     private final String translateTo; //init
-    private final String nativeLanguage; //init
     private final JSONObject userInfo;
     private final String region;
     private final JSONObject params;
+    private ArrayList<String> badwords = new ArrayList<>();
 
     public LocalApi(LockFileIO lockFileIO) throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException, ParseException, FileNotFoundException {
         this.lockFileIO = lockFileIO;
@@ -74,10 +73,9 @@ public class LocalApi {
         params = externalIO.getParams();
         excludeHost = Boolean.parseBoolean((String) params.get("excludeHost"));
         translateTo = (String) params.get("translateTo");
-        nativeLanguage = (String) params.get("nativeLanguage");
+        badwords = externalIO.getBadWords();
         System.out.println(excludeHost);
         System.out.println(translateTo);
-        System.out.println(nativeLanguage);
     }
 
     private void setHttpClient() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
@@ -93,7 +91,6 @@ public class LocalApi {
 
     public String getPartyChatInfo() {
         return createGetRequest(PARTY_CHAT_URL);
-
     }
 
     public String translate(String text, String to) throws ParseException {
@@ -286,9 +283,18 @@ public class LocalApi {
                 continue;
             }
 
+            boolean containsProfanity = containsBadWords(split[1]);
+
+            if (containsProfanity){
+                System.out.println("DETECTED A BAD WORD, SKIPPING");
+                continue;
+            }
+
+
             String translated = translate(split[1], translateTo);
 
             if (translated == null) continue;
+
 
             if (!split[1].equalsIgnoreCase(translated)) {
                 sendChat(cid, split[0] + ":" + translated);
@@ -300,11 +306,27 @@ public class LocalApi {
     //gets messages from the current player session
     public ArrayList<String> determineRetrieval() throws ParseException, UnsupportedEncodingException {
         return switch (getLoopState()) {
-            case "MENUS" -> getChatHistory(getCid(getPartyChatInfo()), State.MENUS);
+            case "MENUS" -> getChatHistory("fdcfdfc5-c397-528c-9635-5bdcb4ade6de@tr1.pvp.net", State.MENUS);
             case "PREGAME" -> getChatHistory(getCid(getPreGameChat()), State.PREGAME);
             case "INGAME" -> getCombinedTextsInGame();
             default -> null;
         };
+    }
+
+    //could be used as a feature
+    public String censorBadWords(String sentence, boolean containsProfanity) {
+        if (!containsProfanity) return sentence;
+        Stream<String> stream = Arrays.stream(sentence.split(" "))
+                .map(e -> badwords.contains(e) ? "*" : e);
+        return stream
+                .map(String::valueOf)
+                .collect(Collectors.joining(" "));
+    }
+
+    public boolean containsBadWords(String sentence) throws ParseException {
+        sentence = translate(sentence, "english");
+        if (sentence == null) return false;
+        return Arrays.stream(sentence.split(" ")).anyMatch(e -> badwords.contains(e.toLowerCase()));
     }
 
 
