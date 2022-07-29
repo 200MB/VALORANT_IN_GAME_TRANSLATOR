@@ -39,7 +39,7 @@ what language you want foreign texts to be translated to.
 
 EXAMPLE: translateTo:english
 
-this will translate every NON native language to english and send it back to team chat.
+this will translate every other foreign language to english and send it back to team chat.
 
 
 
