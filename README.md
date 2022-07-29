@@ -1,6 +1,10 @@
 # VALORANT IN GAME TRANSLATOR
 This is a valorant in game chat translator written in java.
 
+# DOWNLOAD
+
+[RELEASE](https://github.com/200MB/VALORANT_IN_GAME_TRANSLATOR/releases/tag/STABLE)
+
 # HOW TO USE
 
 YOU NEED TO HAVE JAVA INSTALLED IN ORDER TO RUN THIS PROGRAM.
