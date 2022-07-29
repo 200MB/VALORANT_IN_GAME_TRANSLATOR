@@ -62,4 +62,3 @@ happy rank up :)
 # CREDITS
 [VALORANT-API-DOCS](https://github.com/techchrism/valorant-api-docs/tree/trunk/docs)
 [TRANSLATION-API](https://github.com/nidhaloff/deep-translator)
-[PROFANITY-FILTER](https://github.com/Twinkle942910/CheckMateFilter/tree/v1.0)
